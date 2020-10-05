@@ -1,21 +1,24 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct MarkovModel {
     pub frequencies: HashMap<Vec<char>,i32>,
-    pub alphabet: Vec<char>,
+    pub alphabet: HashSet<char>,
 }
 impl MarkovModel {
     pub fn new() -> MarkovModel {
         MarkovModel{
             frequencies: HashMap::new(),
-            alphabet: vec!()
+            alphabet: HashSet::new()
         }
     }
     pub fn add_sequence(&mut self, sequence: &str) {
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
         for c in char_vec {
-            // if vec!(c) is not already a new key, initialize with zero; then increment count
+            // Build a running count of observances of each character:
+            // if vec!(c) is not already a key, initialize with zero; then increment count
             *self.frequencies.entry(vec!(c)).or_insert(0) += 1;
+            // Build a running set of all known characters while we're at it
+            self.alphabet.insert(c);
         }
     }
 }

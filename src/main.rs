@@ -6,7 +6,8 @@ fn main() {
     let input_string = "Hello, world!";
     model.add_sequence(input_string);
 
-    println!("{:?}",model.frequencies);
+    println!("frequencies: {:?}",model.frequencies);
+    println!("alphabet: {:?}",model.alphabet);
 }
 
 
