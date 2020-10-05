@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 pub struct MarkovModel {
-    pub frequencies: HashMap<Vec<char>,i32>,
+    pub frequencies: HashMap<Vec<char>,HashMap<Vec<char>,i32>>,
     pub alphabet: HashSet<char>,
 }
 impl MarkovModel {
@@ -12,13 +12,17 @@ impl MarkovModel {
         }
     }
     pub fn add_sequence(&mut self, sequence: &str) {
+        // TODO: should fail if sequence length < 2
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
-        for c in char_vec {
-            // Build a running count of observances of each character:
-            // if vec!(c) is not already a key, initialize with zero; then increment count
-            *self.frequencies.entry(vec!(c)).or_insert(0) += 1;
+        // loop backwards through the characters in the sequence
+        for i in (1..char_vec.len()).rev() {
             // Build a running set of all known characters while we're at it
-            self.alphabet.insert(c);
+            self.alphabet.insert(char_vec[i]);
+            // For the character at (i-1), record that character at (i) occurred following it.
+            // TODO: build multi-order models
+            *self.frequencies.entry(vec!(char_vec[i-1])).or_insert(HashMap::new()).entry(vec!(char_vec[i])).or_insert(0) += 1;
+            println!("{}",i);
         }
+        self.alphabet.insert(char_vec[0]); // previous loop stops before index 0
     }
 }
