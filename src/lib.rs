@@ -14,11 +14,8 @@ impl MarkovModel {
     pub fn add_sequence(&mut self, sequence: &str) {
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
         for c in char_vec {
-            if let Some(x) = self.frequencies.get_mut(&vec!(c)) {
-                *x = *x + 1;
-            } else {
-                self.frequencies.insert(vec!(c),1);
-            }
+            // if vec!(c) is not already a new key, initialize with zero; then increment count
+            *self.frequencies.entry(vec!(c)).or_insert(0) += 1;
         }
     }
 }
