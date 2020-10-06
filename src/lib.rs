@@ -20,7 +20,19 @@ impl MarkovModel {
 
     // TODO: write method to train on a sequence/stream of Strings e.g. from a file
 
-    // TODO: write tests
+    /// Adds to the model all the observed state transitions found in one sequence of training data.
+    /// This training is additive; it doesn't empty or overwrite the model, so you can call this
+    /// method on many such training sequences in order to fully train the model.
+    ///
+    /// ```
+    /// use multimarkov::MarkovModel;
+    /// let mut model = MarkovModel::new();
+    /// model.add_sequence("hello");
+    /// assert!(model.frequencies.contains_key(&*vec!('l')));
+    /// assert!(model.frequencies.contains_key(&*vec!('l','l')));
+    /// assert!(model.frequencies.get(&*vec!('l')).unwrap().contains_key(&'l'));
+    /// assert!(model.frequencies.get(&*vec!('l','l')).unwrap().contains_key(&'o'));
+    /// ```
     pub fn add_sequence(&mut self, sequence: &str) -> Result<(), &'static str> {
         if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters") };
 
