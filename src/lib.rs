@@ -11,8 +11,9 @@ impl MarkovModel {
             alphabet: HashSet::new()
         }
     }
-    pub fn add_sequence(&mut self, sequence: &str) {
-        // TODO: should fail if sequence length < 2
+    pub fn add_sequence(&mut self, sequence: &str) -> Result<(), &'static str> {
+        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters") };
+
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
         // loop backwards through the characters in the sequence
         for i in (1..char_vec.len()).rev() {
@@ -24,5 +25,6 @@ impl MarkovModel {
             println!("{}",i);
         }
         self.alphabet.insert(char_vec[0]); // previous loop stops before index 0
+        Ok(())
     }
 }
