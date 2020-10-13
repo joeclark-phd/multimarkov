@@ -28,10 +28,10 @@ impl MarkovModel {
     /// use multimarkov::MarkovModel;
     /// let mut model = MarkovModel::new();
     /// model.add_sequence("hello");
-    /// assert!(model.frequencies.contains_key(&*vec!('l')));
-    /// assert!(model.frequencies.contains_key(&*vec!('l','l')));
-    /// assert!(model.frequencies.get(&*vec!('l')).unwrap().contains_key(&'l'));
-    /// assert!(model.frequencies.get(&*vec!('l','l')).unwrap().contains_key(&'o'));
+    /// assert!(model.frequencies.contains_key(&*vec!['l']));
+    /// assert!(model.frequencies.contains_key(&*vec!['l','l']));
+    /// assert!(model.frequencies.get(&*vec!['l']).unwrap().contains_key(&'l'));
+    /// assert!(model.frequencies.get(&*vec!['l','l']).unwrap().contains_key(&'o'));
     /// ```
     pub fn add_sequence(&mut self, sequence: &str) -> Result<(), &'static str> {
         if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters") };
