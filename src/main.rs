@@ -6,7 +6,7 @@ fn main() {
     //let input_string = "Hello, world!";
     //model.add_sequence(input_string).unwrap_or_else(|err| println!("Problem training model: {}", err));
 
-    let input_vec = vec!["e","elizabeth","anne"];
+    let input_vec = vec!["e","foobar","baz"];
     model.add_sequences(input_vec).unwrap_or_else(|err| println!("Problem training model: {}", err));
 
     println!("frequencies: {:?}",model.frequencies);

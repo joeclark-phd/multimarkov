@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::cmp::max;
 
 pub struct MarkovModel {
-    pub frequencies: HashMap<Vec<char>,HashMap<char,i32>>,
+    pub frequencies: HashMap<Vec<char>,HashMap<char,f64>>,
     pub alphabet: HashSet<char>,
     order: i32
 }
@@ -27,7 +27,7 @@ impl MarkovModel {
     /// let input_vec = vec!["a","foobar","baz"];
     /// assert!(model.add_sequences(input_vec).is_ok()); // assert short value "a" did not abort training
     /// assert!(model.frequencies.contains_key(&*vec!['b']));
-    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2i32); // both sequences contain 'b' -> 'a' once
+    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2.0); // both sequences contain 'b' -> 'a' once
     /// ```
     pub fn add_sequences(&mut self, sequences: Vec<&str>) -> Result<(), &'static str> {
         if sequences.len() < 1 { return Err("no sequences in input"); }
@@ -55,8 +55,8 @@ impl MarkovModel {
     /// assert!(model.frequencies.get(&*vec!['l']).unwrap().contains_key(&'l'));
     /// assert!(model.frequencies.get(&*vec!['l','l']).unwrap().contains_key(&'o'));
     /// ```
-    pub fn add_sequence(&mut self, sequence: &str) -> Result<(), &'static str> {
-        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters"); }
+    pub fn add_sequence(&mut self, sequence: &str) -> Result<(), String> {
+        if sequence.len() < 2 { return Err(format!("sequence '{}' was too short, must contain at least two characters",sequence)); }
 
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
         // loop backwards through the characters in the sequence
@@ -66,7 +66,7 @@ impl MarkovModel {
             // For the sequences preceding character (i), record that character (i) was observed following them.
             // IE if the char_vec is ['R','U','S','T'] and this is a 3rd-order model, then for the three models ['S'], ['U','S'], and ['R','U','S'] we record that ['T'] is a known follower.
             for j in (max(0,i as i32 - self.order) as usize)..i {
-                *self.frequencies.entry(Vec::from(&char_vec[j..i])).or_insert(HashMap::new()).entry(char_vec[i]).or_insert(0) += 1;
+                *self.frequencies.entry(Vec::from(&char_vec[j..i])).or_insert(HashMap::new()).entry(char_vec[i]).or_insert(0.0) += 1.0;
             }
         }
         self.alphabet.insert(char_vec[0]); // previous loop stops before index 0
