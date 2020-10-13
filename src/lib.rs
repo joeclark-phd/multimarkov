@@ -1,7 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::cmp::max;
-use std::cmp::min;
-use std::hash::Hash;
+use std::cmp::{max,min};
 
 pub struct MarkovModel {
     pub frequencies: HashMap<Vec<char>,HashMap<char,f64>>,
