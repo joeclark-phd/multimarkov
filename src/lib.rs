@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::cmp::max;
+use std::cmp::min;
+use std::hash::Hash;
 
 pub struct MarkovModel {
     pub frequencies: HashMap<Vec<char>,HashMap<char,f64>>,
@@ -14,7 +16,7 @@ impl MarkovModel {
         MarkovModel{
             frequencies: HashMap::new(),
             alphabet: HashSet::new(),
-            order: MarkovModel::DEFAULT_ORDER,
+            order: MarkovModel::DEFAULT_ORDER, // TODO: confirm: is this immutable once set? it should be, so we don't train and retrieve with different assumed orders
         }
     }
 
@@ -71,6 +73,21 @@ impl MarkovModel {
         }
         self.alphabet.insert(char_vec[0]); // previous loop stops before index 0
         Ok(())
+    }
+
+
+    /// For a given sequence, find the most tightly-fitted model we have for its tail-end subsequence.
+    /// For example, if the sequence is ['r','u','s'], first see if we have a model for ['r','u','s'],
+    /// which will only exist if that sequence has been seen in the training data.  If not, see if
+    /// we have a model for ['u','s'], and failing that, see if we have a model for ['s'].
+    pub fn best_model(&self, current_sequence: &Vec<char>) ->  Option<&HashMap<char,f64>> {
+        for i in (1..min(self.order as usize, current_sequence.len())).rev() {
+            let subsequence = &current_sequence[(current_sequence.len()-i)..current_sequence.len()];
+            if self.frequencies.contains_key(subsequence) {
+                return self.frequencies.get(subsequence);
+            }
+        }
+        None
     }
 
 }
