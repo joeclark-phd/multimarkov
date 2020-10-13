@@ -18,7 +18,29 @@ impl MarkovModel {
         }
     }
 
-    // TODO: write method to train on a sequence/stream of Strings e.g. from a file
+    /// Takes in a vector of sequences (strings, for now), and calls the add_sequence function on
+    /// each one in turn, training the model.
+    ///
+    /// ```
+    /// use multimarkov::MarkovModel;
+    /// let mut model = MarkovModel::new();
+    /// let input_vec = vec!["a","foobar","baz"];
+    /// assert!(model.add_sequences(input_vec).is_ok()); // assert short value "a" did not abort training
+    /// assert!(model.frequencies.contains_key(&*vec!['b']));
+    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2i32); // both sequences contain 'b' -> 'a' once
+    /// ```
+    pub fn add_sequences(&mut self, sequences: Vec<&str>) -> Result<(), &'static str> {
+        if sequences.len() < 1 { return Err("no sequences in input"); }
+        for sequence in sequences {
+            match self.add_sequence(sequence) {
+                Ok(()) => (),
+                Err(e) => {
+                    println!("error ignored: {}",e);
+                }
+            };
+        }
+        return Ok(());
+    }
 
     /// Adds to the model all the observed state transitions found in one sequence of training data.
     /// This training is additive; it doesn't empty or overwrite the model, so you can call this
@@ -34,7 +56,7 @@ impl MarkovModel {
     /// assert!(model.frequencies.get(&*vec!['l','l']).unwrap().contains_key(&'o'));
     /// ```
     pub fn add_sequence(&mut self, sequence: &str) -> Result<(), &'static str> {
-        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters") };
+        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two characters"); }
 
         let char_vec: Vec<char> = sequence.to_lowercase().chars().collect();
         // loop backwards through the characters in the sequence
