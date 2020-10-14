@@ -12,7 +12,10 @@ fn main() {
     //println!("frequencies: {:?}",model.frequencies);
     //println!("alphabet: {:?}",model.alphabet);
 
-    println!("best model for 'abfa': {:?}", model.best_model(&vec!['a','b','f','a']).unwrap() );
+    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
+    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
+    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
+    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
 }
 
 

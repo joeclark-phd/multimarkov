@@ -1,10 +1,12 @@
 use std::collections::{HashMap, HashSet};
 use std::cmp::{max,min};
+use rand::Rng;
 
 pub struct MarkovModel {
     pub frequencies: HashMap<Vec<char>,HashMap<char,f64>>,
     pub alphabet: HashSet<char>,
-    order: i32
+    order: i32,
+    // TODO: add a random number generator (or seed?) that the user can specify, or go with a default
 }
 impl MarkovModel {
 
@@ -73,6 +75,25 @@ impl MarkovModel {
         Ok(())
     }
 
+    /// Using the random-number generator and the "weights" of the various state transitions from
+    /// the trained model, draw a new character to follow the given sequence.
+    pub fn random_next(&mut self, current_sequence: &Vec<char>) -> Option<char> {
+        let bestmodel = self.best_model(current_sequence)?;
+        let sum_of_weights: f64 = bestmodel.values().sum();
+        // TODO: use an RNG or RNG seed stored in the struct, so the user can specify it if desired
+        let mut rng = rand::thread_rng();
+        let r: f64 = rng.gen();
+        let mut randomroll = r*sum_of_weights; // TODO: can this be accomplished in fewer lines?
+        // every state has a chance of being selected in proportion to its 'weight' as fraction of the sum of weights
+        for (k,v) in bestmodel {
+            if randomroll > *v {
+                randomroll -= v;
+            } else {
+                return Some(k.clone());
+            }
+        }
+        None // this should never be reached
+    }
 
     /// For a given sequence, find the most tightly-fitted model we have for its tail-end subsequence.
     /// For example, if the sequence is `['t','r','u','s']`, and self.order==3, first see if we have
