@@ -18,7 +18,7 @@ impl MarkovModel {
         }
     }
 
-    /// Takes in a vector of sequences (strings, for now), and calls the add_sequence function on
+    /// Takes in a vector of sequences (strings, for now), and calls the `add_sequence` method on
     /// each one in turn, training the model.
     ///
     /// ```
@@ -75,10 +75,10 @@ impl MarkovModel {
 
 
     /// For a given sequence, find the most tightly-fitted model we have for its tail-end subsequence.
-    /// For example, if the sequence is ['t','r','u','s'], and self.order==3, first see if we have
-    /// a model for ['r','u','s'], which will only exist if that sequence has been seen in the training
-    /// data.  If not, see if we have a model for ['u','s'], and failing that, see if we have a
-    /// model for ['s'].  If no model for ['s'] is found, return None.
+    /// For example, if the sequence is `['t','r','u','s']`, and self.order==3, first see if we have
+    /// a model for `['r','u','s']`, which will only exist if that sequence has been seen in the training
+    /// data.  If not, see if we have a model for `['u','s']`, and failing that, see if we have a
+    /// model for `['s']`.  If no model for `['s']` is found, return `None`.
     ///
     /// ```
     /// use multimarkov::MarkovModel;
