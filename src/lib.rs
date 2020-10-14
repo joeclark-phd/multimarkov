@@ -80,6 +80,25 @@ impl MarkovModel {
         Ok(())
     }
 
+    /// Fills in missing state transitions with a given value so that any observed state (except
+    /// those only seen at the end of sequences) can transition to any other state.
+    ///
+    /// ```
+    /// use multimarkov::MarkovModel;
+    /// let mut model = MarkovModel::new();
+    /// model.add_sequence("abc");
+    /// model.add_priors(MarkovModel::DEFAULT_PRIOR);
+    /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
+    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
+    /// ```
+    pub fn add_priors(&mut self, prior: f64) {
+        for v in self.frequencies.values_mut() {
+            for &a in self.alphabet.iter() {
+                v.entry(a).or_insert(prior);
+            }
+        }
+    }
+
     /// Using the random-number generator and the "weights" of the various state transitions from
     /// the trained model, draw a new character to follow the given sequence.
     pub fn random_next(&mut self, current_sequence: &Vec<char>) -> Option<char> {
@@ -127,23 +146,5 @@ impl MarkovModel {
         None
     }
 
-    /// Fills in missing state transitions with a given value so that any observed state (except
-    /// those only seen at the end of sequences) can transition to any other state.
-    ///
-    /// ```
-    /// use multimarkov::MarkovModel;
-    /// let mut model = MarkovModel::new();
-    /// model.add_sequence("abc");
-    /// model.add_priors(MarkovModel::DEFAULT_PRIOR);
-    /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
-    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
-    /// ```
-    pub fn add_priors(&mut self, prior: f64) {
-        for v in self.frequencies.values_mut() {
-            for &a in self.alphabet.iter() {
-                v.entry(a).or_insert(prior);
-            }
-        }
-    }
 
 }
