@@ -8,14 +8,12 @@ fn main() {
 
     let input_vec = vec!["ace","foobar","baz"];
     model.add_sequences(input_vec).unwrap_or_else(|err| println!("Problem training model: {}", err));
+    model.add_priors(MarkovModel::DEFAULT_PRIOR);
 
-    //println!("frequencies: {:?}",model.frequencies);
-    //println!("alphabet: {:?}",model.alphabet);
+    println!("frequencies: {:?}",model.frequencies);
+    println!("alphabet: {:?}",model.alphabet);
+    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
 
-    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
-    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
-    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
-    println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
 }
 
 

@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::cmp::{max,min};
 use rand::Rng;
 
+// TODO: generify
 pub struct MarkovModel {
     pub frequencies: HashMap<Vec<char>,HashMap<char,f64>>,
     pub alphabet: HashSet<char>,
@@ -10,7 +11,8 @@ pub struct MarkovModel {
 }
 impl MarkovModel {
 
-    const DEFAULT_ORDER: i32 = 3;
+    pub const DEFAULT_ORDER: i32 = 3;
+    pub const DEFAULT_PRIOR: f64 = 0.005;
 
     pub fn new() -> MarkovModel {
         MarkovModel{
@@ -19,6 +21,8 @@ impl MarkovModel {
             order: MarkovModel::DEFAULT_ORDER, // TODO: confirm: is this immutable once set? it should be, so we don't train and retrieve with different assumed orders
         }
     }
+
+    // TODO: an overloaded "train" method that handles all data ingestion and sets priors; optionally setting a custom order and custom prior
 
     /// Takes in a vector of sequences (strings, for now), and calls the `add_sequence` method on
     /// each one in turn, training the model.
@@ -31,6 +35,7 @@ impl MarkovModel {
     /// assert!(model.frequencies.contains_key(&*vec!['b']));
     /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2.0); // both sequences contain 'b' -> 'a' once
     /// ```
+    /// TODO: take an iterator directly instead of a vector
     pub fn add_sequences(&mut self, sequences: Vec<&str>) -> Result<(), &'static str> {
         if sequences.len() < 1 { return Err("no sequences in input"); }
         for sequence in sequences {
@@ -120,6 +125,25 @@ impl MarkovModel {
             }
         }
         None
+    }
+
+    /// Fills in missing state transitions with a given value so that any observed state (except
+    /// those only seen at the end of sequences) can transition to any other state.
+    ///
+    /// ```
+    /// use multimarkov::MarkovModel;
+    /// let mut model = MarkovModel::new();
+    /// model.add_sequence("abc");
+    /// model.add_priors(MarkovModel::DEFAULT_PRIOR);
+    /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
+    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
+    /// ```
+    pub fn add_priors(&mut self, prior: f64) {
+        for v in self.frequencies.values_mut() {
+            for &a in self.alphabet.iter() {
+                v.entry(a).or_insert(prior);
+            }
+        }
     }
 
 }
