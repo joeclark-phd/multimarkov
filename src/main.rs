@@ -12,7 +12,7 @@ fn main() {
     //println!("frequencies: {:?}",model.frequencies);
     //println!("alphabet: {:?}",model.alphabet);
 
-    println!("best model for 'ba': {:?}", model.best_model(&vec!['a','b','b','a']).unwrap() );
+    println!("best model for 'abfa': {:?}", model.best_model(&vec!['a','b','f','a']).unwrap() );
 }
 
 

@@ -75,11 +75,24 @@ impl MarkovModel {
 
 
     /// For a given sequence, find the most tightly-fitted model we have for its tail-end subsequence.
-    /// For example, if the sequence is ['r','u','s'], first see if we have a model for ['r','u','s'],
-    /// which will only exist if that sequence has been seen in the training data.  If not, see if
-    /// we have a model for ['u','s'], and failing that, see if we have a model for ['s'].
+    /// For example, if the sequence is ['t','r','u','s'], and self.order==3, first see if we have
+    /// a model for ['r','u','s'], which will only exist if that sequence has been seen in the training
+    /// data.  If not, see if we have a model for ['u','s'], and failing that, see if we have a
+    /// model for ['s'].  If no model for ['s'] is found, return None.
+    ///
+    /// ```
+    /// use multimarkov::MarkovModel;
+    /// let mut model = MarkovModel::new();
+    /// let input_vec = vec!["ace","foobar","baz"];
+    /// model.add_sequences(input_vec);
+    /// let bestmodel = model.best_model(&vec!['b','a']).unwrap();
+    /// assert!(bestmodel.contains_key(&'r')); // 'r' follows ['a'] as well as ['b','a']
+    /// assert!(!bestmodel.contains_key(&'c')); // 'c' follows ['a'], but doesn't follow ['b','a']
+    /// ```
     pub fn best_model(&self, current_sequence: &Vec<char>) ->  Option<&HashMap<char,f64>> {
-        for i in (1..min(self.order as usize, current_sequence.len())).rev() {
+        // If current_sequence.len() is at least self.order, count "i" down from self.order to 1,
+        // taking sequence slices of length "i" and checking if we have a matching model:
+        for i in (1..(min(self.order as usize, current_sequence.len())+1)).rev() {
             let subsequence = &current_sequence[(current_sequence.len()-i)..current_sequence.len()];
             if self.frequencies.contains_key(subsequence) {
                 return self.frequencies.get(subsequence);
