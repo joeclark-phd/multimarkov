@@ -3,6 +3,24 @@ use std::cmp::{max,min};
 use rand::Rng;
 use std::hash::Hash;
 
+/// A Markov chain maps current states to possible future states, usually providing probabilities
+/// for each possible state transition.  This is useful in procedural generation, for example to
+/// model which letters in a language most frequently follow a given letter, and to randomly
+/// generate a sequence of future states based on the probabilities quantified in the chain.
+///
+/// This struct offers multi-order Markov chain models with a Katz back-off.  What that means is,
+/// if `order > 1`, multiple models of varying fittedness may specify possible following states
+/// for a given sequence.  For example, if `order == 3` (the default) and you have a sequence
+/// `['R','U','S','T']`, for which you'd like to randomly draw future states, your instance of
+/// MultiMarkovModel may have a model for states that follow `['U','S','T']`, another for states
+/// that follow `['S','T']`, and a third for states that follow `['T']`.  These models are built up
+/// by ingesting vectors of training data (for example, text from a file) and the most
+/// tightly-fitted model available will be used internally to draw a random future state.
+///
+/// A feature that may be desired in procedural generation applications is the option to inject some
+/// "true randomness" in the form of "prior" relative probabilities, i.e., small weights given to
+/// state transitions *not* observed in training data.  These can make up for the limitations of a
+/// training dataset and enable the generation of sequences not observed in training.
 pub struct MultiMarkovModel<T: Eq + Hash + Clone + Copy> {
     pub frequencies: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
