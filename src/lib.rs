@@ -53,15 +53,14 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     ///     vec!['f','o','o','b','a','r'],
     ///     vec!['b','a','z'],
     /// ];
-    /// assert!(model.add_sequences(input_vec).is_ok()); // assert short value "a" did not abort training
+    /// assert!(model.add_sequences(input_vec.into_iter()).is_ok()); // assert short value "a" did not abort training
     /// assert!(model.frequencies.contains_key(&*vec!['b']));
     /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2.0); // both sequences contain 'b' -> 'a' once
     /// ```
-    /// TODO: take an iterator directly instead of a vector
-    pub fn add_sequences(&mut self, sequences: Vec<Vec<T>>) -> Result<(), &'static str> {
-        if sequences.len() < 1 { return Err("no sequences in input"); }
+    pub fn add_sequences(&mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<(), &'static str> {
+        //if sequences.len() < 1 { return Err("no sequences in input"); }
         for sequence in sequences {
-            match self.add_sequence(sequence) {
+            match self.add_sequence(&sequence) {
                 Ok(()) => (),
                 Err(e) => {
                     println!("error ignored: {}",e);
@@ -78,14 +77,14 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     /// ```
     /// use multimarkov::MultiMarkovModel;
     /// let mut model = MultiMarkovModel::new();
-    /// model.add_sequence(vec!['h','e','l','l','o']);
+    /// model.add_sequence(&vec!['h','e','l','l','o']);
     /// assert!(model.frequencies.contains_key(&*vec!['l']));
     /// assert!(model.frequencies.contains_key(&*vec!['l','l']));
     /// assert!(model.frequencies.get(&*vec!['l']).unwrap().contains_key(&'l'));
     /// assert!(model.frequencies.get(&*vec!['l','l']).unwrap().contains_key(&'o'));
     /// ```
-    pub fn add_sequence(&mut self, sequence: Vec<T>) -> Result<(), String> {
-        if sequence.len() < 2 { return Err(format!("sequence was too short, must contain at least two states")); }
+    pub fn add_sequence(&mut self, sequence: &Vec<T>) -> Result<(), &'static str> {
+        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two states"); }
 
         // loop backwards through the characters in the sequence
         for i in (1..sequence.len()).rev() {
@@ -107,7 +106,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     /// ```
     /// use multimarkov::MultiMarkovModel;
     /// let mut model = MultiMarkovModel::new();
-    /// model.add_sequence(vec!['a','b','c']);
+    /// model.add_sequence(&vec!['a','b','c']);
     /// model.add_priors(MultiMarkovModel::<char>::DEFAULT_PRIOR);
     /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
     /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
@@ -154,7 +153,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     ///     vec!['f','o','o','b','a','r'],
     ///     vec!['b','a','z'],
     /// ];
-    /// model.add_sequences(input_vec);
+    /// model.add_sequences(input_vec.into_iter());
     /// let bestmodel = model.best_model(&vec!['b','a']).unwrap();
     /// assert!(bestmodel.contains_key(&'r')); // 'r' follows ['a'] as well as ['b','a']
     /// assert!(!bestmodel.contains_key(&'c')); // 'c' follows ['a'], but doesn't follow ['b','a']

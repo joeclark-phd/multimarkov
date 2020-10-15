@@ -8,7 +8,7 @@ fn main() {
         vec!['f','o','o','b','a','r'],
         vec!['b','a','z'],
     ];
-    model.add_sequences(input_vec).unwrap_or_else(|err| println!("Problem training model: {}", err));
+    model.add_sequences(input_vec.into_iter()).unwrap_or_else(|err| println!("Problem training model: {}", err));
     model.add_priors(MultiMarkovModel::<char>::DEFAULT_PRIOR);
     println!("frequencies: {:?}",model.frequencies);
     println!("known states: {:?}",model.known_states);
