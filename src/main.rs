@@ -1,17 +1,17 @@
 use multimarkov::MarkovModel;
 
 fn main() {
-    let mut model = MarkovModel::new();
+    let mut model = MarkovModel::<char>::new();
 
-    //let input_string = "Hello, world!";
-    //model.add_sequence(input_string).unwrap_or_else(|err| println!("Problem training model: {}", err));
-
-    let input_vec = vec!["ace","foobar","baz"];
+    let input_vec = vec![
+        vec!['a','c','e'],
+        vec!['f','o','o','b','a','r'],
+        vec!['b','a','z'],
+    ];
     model.add_sequences(input_vec).unwrap_or_else(|err| println!("Problem training model: {}", err));
-    model.add_priors(MarkovModel::DEFAULT_PRIOR);
-
+    model.add_priors(MarkovModel::<char>::DEFAULT_PRIOR);
     println!("frequencies: {:?}",model.frequencies);
-    println!("alphabet: {:?}",model.alphabet);
+    println!("known states: {:?}",model.known_states);
     println!("random next for 'abba': {:?}", model.random_next(&vec!['a','b','b','a']) );
 
 }
