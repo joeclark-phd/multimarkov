@@ -3,22 +3,22 @@ use std::cmp::{max,min};
 use rand::Rng;
 use std::hash::Hash;
 
-pub struct MarkovModel<T: Eq + Hash + Clone + Copy> {
+pub struct MultiMarkovModel<T: Eq + Hash + Clone + Copy> {
     pub frequencies: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
     order: i32,
     // TODO: add a random number generator (or seed?) that the user can specify, or go with a default
 }
-impl<T: Eq + Hash + Clone + Copy> MarkovModel<T> {
+impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
 
     pub const DEFAULT_ORDER: i32 = 3;
     pub const DEFAULT_PRIOR: f64 = 0.005;
 
-    pub fn new() -> MarkovModel<T> {
-        MarkovModel{
+    pub fn new() -> MultiMarkovModel<T> {
+        MultiMarkovModel {
             frequencies: HashMap::new(),
             known_states: HashSet::new(),
-            order: MarkovModel::<T>::DEFAULT_ORDER, // TODO: confirm: is this immutable once set? it should be, so we don't train and retrieve with different assumed orders
+            order: MultiMarkovModel::<T>::DEFAULT_ORDER, // TODO: confirm: is this immutable once set? it should be, so we don't train and retrieve with different assumed orders
         }
     }
 
@@ -28,8 +28,8 @@ impl<T: Eq + Hash + Clone + Copy> MarkovModel<T> {
     /// each one in turn, training the model.
     ///
     /// ```
-    /// use multimarkov::MarkovModel;
-    /// let mut model = MarkovModel::new();
+    /// use multimarkov::MultiMarkovModel;
+    /// let mut model = MultiMarkovModel::new();
     /// let input_vec = vec![
     ///     vec!['a'],
     ///     vec!['f','o','o','b','a','r'],
@@ -58,8 +58,8 @@ impl<T: Eq + Hash + Clone + Copy> MarkovModel<T> {
     /// method on many such training sequences in order to fully train the model.
     ///
     /// ```
-    /// use multimarkov::MarkovModel;
-    /// let mut model = MarkovModel::new();
+    /// use multimarkov::MultiMarkovModel;
+    /// let mut model = MultiMarkovModel::new();
     /// model.add_sequence(vec!['h','e','l','l','o']);
     /// assert!(model.frequencies.contains_key(&*vec!['l']));
     /// assert!(model.frequencies.contains_key(&*vec!['l','l']));
@@ -87,10 +87,10 @@ impl<T: Eq + Hash + Clone + Copy> MarkovModel<T> {
     /// those only seen at the end of sequences) can transition to any other state.
     ///
     /// ```
-    /// use multimarkov::MarkovModel;
-    /// let mut model = MarkovModel::new();
+    /// use multimarkov::MultiMarkovModel;
+    /// let mut model = MultiMarkovModel::new();
     /// model.add_sequence(vec!['a','b','c']);
-    /// model.add_priors(MarkovModel::<char>::DEFAULT_PRIOR);
+    /// model.add_priors(MultiMarkovModel::<char>::DEFAULT_PRIOR);
     /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
     /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
     /// ```
@@ -129,8 +129,8 @@ impl<T: Eq + Hash + Clone + Copy> MarkovModel<T> {
     /// model for `['s']`.  If no model for `['s']` is found, return `None`.
     ///
     /// ```
-    /// use multimarkov::MarkovModel;
-    /// let mut model = MarkovModel::new();
+    /// use multimarkov::MultiMarkovModel;
+    /// let mut model = MultiMarkovModel::new();
     /// let input_vec = vec![
     ///     vec!['a','c','e'],
     ///     vec!['f','o','o','b','a','r'],
