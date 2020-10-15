@@ -3,10 +3,13 @@ use std::cmp::{max,min};
 use rand::Rng;
 use std::hash::Hash;
 
+/// Multi-order Markov chain models with a Katz back-off, for procedural generation applications.
+///
 /// A Markov chain maps current states to possible future states, usually providing probabilities
-/// for each possible state transition.  This is useful in procedural generation, for example to
-/// model which letters in a language most frequently follow a given letter, and to randomly
-/// generate a sequence of future states based on the probabilities quantified in the chain.
+/// for each possible state transition ([c.f. Wikipedia](https://en.wikipedia.org/wiki/Markov_chain)).
+/// This is useful in procedural generation, for example to model which letters in a language most
+/// frequently follow a given letter, and to randomly generate a sequence of future states based on
+/// the probabilities quantified in the chain.
 ///
 /// This struct offers multi-order Markov chain models with a Katz back-off.  What that means is,
 /// if `order > 1`, multiple models of varying fittedness may specify possible following states
@@ -14,17 +17,44 @@ use std::hash::Hash;
 /// `['R','U','S','T']`, for which you'd like to randomly draw future states, your instance of
 /// MultiMarkovModel may have a model for states that follow `['U','S','T']`, another for states
 /// that follow `['S','T']`, and a third for states that follow `['T']`.  These models are built up
-/// by ingesting vectors of training data (for example, text from a file) and the most
-/// tightly-fitted model available will be used internally to draw a random future state.
+/// by ingesting vectors of training data (for example, text from a file).  The "Katz back-off"
+/// means that in drawing random future states we try to use the probability distribution in the
+/// most tightly-fitted possible model (the one for `['U','S','T']`), but if no such model exists
+/// (i.e., if the sequence `['U','S','T']` was never seen in the training data with any following
+/// state), we then "back off" to the next-best-fitted model (`['S','T']`) and so on, until we find
+/// a trained model.  A model will certainly be found if `['T']` was even once observed in the
+/// training data with a following state.
 ///
 /// A feature that may be desired in procedural generation applications is the option to inject some
-/// "true randomness" in the form of "prior" relative probabilities, i.e., small weights given to
-/// state transitions *not* observed in training data.  These can make up for the limitations of a
-/// training dataset and enable the generation of sequences not observed in training.
+/// "true randomness" in the form of "Dirichlet prior" relative probabilities, i.e., small weights
+/// given to state transitions *not* observed in training data.  These can make up for the sparsity
+/// of a training dataset and enable the generation of sequences not observed in training.
+///
+/// This implementation is inspired by the algorithm
+/// [described by JLund3 at RogueBasin](http://roguebasin.roguelikedevelopment.org/index.php?title=Names_from_a_high_order_Markov_Process_and_a_simplified_Katz_back-off_scheme).
+///
+/// Instantiate it with the builder pattern:
+///
+/// ```
+/// use multimarkov::MultiMarkovModel;
+/// let input_vec = vec![
+///     vec!['a','c','e'],
+///     vec!['f','o','o','b','a','r'],
+///     vec!['b','a','z'],
+/// ];
+/// let mut model = MultiMarkovModel::<char>::new()
+///     .with_order(2) // omit to use default of 3
+///     .with_priors(0.01) // omit to use default of 0.005
+///     .train(input_vec.into_iter()) // you can chain this method to train on more than one iterator
+///     .expect("something went wrong training the model!");
+/// ```
+///
+/// Use method `random_next` (see below) to use it to generate new sequences.
 pub struct MultiMarkovModel<T: Eq + Hash + Clone + Copy> {
     pub frequencies: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
     order: i32,
+    prior: f64,
     // TODO: add a random number generator (or seed?) that the user can specify, or go with a default
 }
 impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
@@ -37,15 +67,36 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
             frequencies: HashMap::new(),
             known_states: HashSet::new(),
             order: MultiMarkovModel::<T>::DEFAULT_ORDER,
+            prior: MultiMarkovModel::<T>::DEFAULT_PRIOR,
         }
     }
 
-    // TODO: an overloaded "train" method that handles all data ingestion and sets priors; optionally setting a custom order and custom prior
+    pub fn with_order(mut self, order: i32) -> Self {
+        self.order = order;
+        self
+    }
+
+    pub fn with_priors(mut self, prior: f64) -> Self {
+        self.prior = prior;
+        self
+    }
+
+    pub fn without_priors(mut self) -> Self {
+        self.prior = 0.0;
+        self
+    }
+
+    pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<Self, &'static str> {
+        self.add_sequences(sequences)?;
+        self.add_priors(self.prior);
+        Ok(self)
+    }
+
 
     /// Takes in a vector of sequences, and calls the `add_sequence` method on
     /// each one in turn, training the model.
     ///
-    /// ```
+    /// ```x
     /// use multimarkov::MultiMarkovModel;
     /// let mut model = MultiMarkovModel::new();
     /// let input_vec = vec![
