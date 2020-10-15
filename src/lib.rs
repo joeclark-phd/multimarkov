@@ -36,7 +36,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
         MultiMarkovModel {
             frequencies: HashMap::new(),
             known_states: HashSet::new(),
-            order: MultiMarkovModel::<T>::DEFAULT_ORDER, // TODO: confirm: is this immutable once set? it should be, so we don't train and retrieve with different assumed orders
+            order: MultiMarkovModel::<T>::DEFAULT_ORDER,
         }
     }
 
