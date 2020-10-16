@@ -1,4 +1,4 @@
-use multimarkov::MultiMarkovModel;
+use multimarkov::MultiMarkov;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
@@ -8,7 +8,7 @@ fn main() {
     let reader = BufReader::new(file);
     let lines = reader.lines().map(|l| l.unwrap().to_lowercase() ).map(|l| l.chars().collect::<Vec<_>>()).map(|mut v| { v.insert(0, '#'); v.push('#'); v });
 
-    let mut model = MultiMarkovModel::<char>::new()
+    let mut model = MultiMarkov::<char>::new()
         .with_order(3)
         .with_priors(0.01)
         .train(lines).expect("something went wrong training the model!");

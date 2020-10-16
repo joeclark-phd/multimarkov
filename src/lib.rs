@@ -36,13 +36,13 @@ use std::hash::Hash;
 /// Instantiate it with the builder pattern:
 ///
 /// ```
-/// use multimarkov::MultiMarkovModel;
+/// use multimarkov::MultiMarkov;
 /// let input_vec = vec![
 ///     vec!['a','c','e'],
 ///     vec!['f','o','o','b','a','r'],
 ///     vec!['b','a','z'],
 /// ];
-/// let mut model = MultiMarkovModel::<char>::new()
+/// let markov = MultiMarkov::<char>::new()
 ///     .with_order(2) // omit to use default of 3
 ///     .with_priors(0.01) // omit to use default of 0.005
 ///     .train(input_vec.into_iter()) // you can chain this method to train on more than one iterator
@@ -50,24 +50,24 @@ use std::hash::Hash;
 /// ```
 ///
 /// Use method `random_next` (see below) to use it to generate new sequences.
-pub struct MultiMarkovModel<T: Eq + Hash + Clone + Copy> {
-    pub frequencies: HashMap<Vec<T>,HashMap<T,f64>>,
+pub struct MultiMarkov<T: Eq + Hash + Clone + Copy> {
+    pub markov_chain: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
     order: i32,
     prior: f64,
     // TODO: add a random number generator (or seed?) that the user can specify, or go with a default
 }
-impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
+impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
 
     pub const DEFAULT_ORDER: i32 = 3;
     pub const DEFAULT_PRIOR: f64 = 0.005;
 
-    pub fn new() -> MultiMarkovModel<T> {
-        MultiMarkovModel {
-            frequencies: HashMap::new(),
+    pub fn new() -> MultiMarkov<T> {
+        MultiMarkov {
+            markov_chain: HashMap::new(),
             known_states: HashSet::new(),
-            order: MultiMarkovModel::<T>::DEFAULT_ORDER,
-            prior: MultiMarkovModel::<T>::DEFAULT_PRIOR,
+            order: MultiMarkov::<T>::DEFAULT_ORDER,
+            prior: MultiMarkov::<T>::DEFAULT_PRIOR,
         }
     }
 
@@ -86,29 +86,18 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
         self
     }
 
+    /// Ingest an iterator of sequences, adding the observed state transitions to the internal
+    /// statistical model.  Data is added, not replaced, so this method can be called repeatedly
+    /// (or chained) to use multiple data sets in building the model.
     pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<Self, &'static str> {
         self.add_sequences(sequences)?;
         self.add_priors(self.prior);
         Ok(self)
     }
 
-
     /// Takes in a vector of sequences, and calls the `add_sequence` method on
     /// each one in turn, training the model.
-    ///
-    /// ```x
-    /// use multimarkov::MultiMarkovModel;
-    /// let mut model = MultiMarkovModel::new();
-    /// let input_vec = vec![
-    ///     vec!['a'],
-    ///     vec!['f','o','o','b','a','r'],
-    ///     vec!['b','a','z'],
-    /// ];
-    /// assert!(model.add_sequences(input_vec.into_iter()).is_ok()); // assert short value "a" did not abort training
-    /// assert!(model.frequencies.contains_key(&*vec!['b']));
-    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2.0); // both sequences contain 'b' -> 'a' once
-    /// ```
-    pub fn add_sequences(&mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<(), &'static str> {
+    fn add_sequences(&mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<(), &'static str> {
         //if sequences.len() < 1 { return Err("no sequences in input"); }
         for sequence in sequences {
             match self.add_sequence(&sequence) {
@@ -124,17 +113,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     /// Adds to the model all the observed state transitions found in one sequence of training data.
     /// This training is additive; it doesn't empty or overwrite the model, so you can call this
     /// method on many such training sequences in order to fully train the model.
-    ///
-    /// ```
-    /// use multimarkov::MultiMarkovModel;
-    /// let mut model = MultiMarkovModel::new();
-    /// model.add_sequence(&vec!['h','e','l','l','o']);
-    /// assert!(model.frequencies.contains_key(&*vec!['l']));
-    /// assert!(model.frequencies.contains_key(&*vec!['l','l']));
-    /// assert!(model.frequencies.get(&*vec!['l']).unwrap().contains_key(&'l'));
-    /// assert!(model.frequencies.get(&*vec!['l','l']).unwrap().contains_key(&'o'));
-    /// ```
-    pub fn add_sequence(&mut self, sequence: &Vec<T>) -> Result<(), &'static str> {
+    fn add_sequence(&mut self, sequence: &Vec<T>) -> Result<(), &'static str> {
         if sequence.len() < 2 { return Err("sequence was too short, must contain at least two states"); }
 
         // loop backwards through the characters in the sequence
@@ -144,7 +123,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
             // For the sequences preceding character (i), record that character (i) was observed following them.
             // IE if the char_vec is ['R','U','S','T'] and this is a 3rd-order model, then for the three models ['S'], ['U','S'], and ['R','U','S'] we record that ['T'] is a known follower.
             for j in (max(0,i as i32 - self.order) as usize)..i {
-                *self.frequencies.entry(Vec::from(&sequence[j..i])).or_insert(HashMap::new()).entry(sequence[i]).or_insert(0.0) += 1.0;
+                *self.markov_chain.entry(Vec::from(&sequence[j..i])).or_insert(HashMap::new()).entry(sequence[i]).or_insert(0.0) += 1.0;
             }
         }
         self.known_states.insert(sequence[0]); // previous loop stops before index 0
@@ -153,17 +132,8 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
 
     /// Fills in missing state transitions with a given value so that any observed state (except
     /// those only seen at the end of sequences) can transition to any other state.
-    ///
-    /// ```
-    /// use multimarkov::MultiMarkovModel;
-    /// let mut model = MultiMarkovModel::new();
-    /// model.add_sequence(&vec!['a','b','c']);
-    /// model.add_priors(MultiMarkovModel::<char>::DEFAULT_PRIOR);
-    /// assert_eq!(*model.frequencies.get(&*vec!['a']).unwrap().get(&'b').unwrap(),1.0); // learned from training data
-    /// assert_eq!(*model.frequencies.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.005); // not observed in training data; set to DEFAULT_PRIOR by add_priors
-    /// ```
-    pub fn add_priors(&mut self, prior: f64) {
-        for v in self.frequencies.values_mut() {
+    fn add_priors(&mut self, prior: f64) {
+        for v in self.markov_chain.values_mut() {
             for &a in self.known_states.iter() {
                 v.entry(a).or_insert(prior);
             }
@@ -195,27 +165,13 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
     /// a model for `['r','u','s']`, which will only exist if that sequence has been seen in the training
     /// data.  If not, see if we have a model for `['u','s']`, and failing that, see if we have a
     /// model for `['s']`.  If no model for `['s']` is found, return `None`.
-    ///
-    /// ```
-    /// use multimarkov::MultiMarkovModel;
-    /// let mut model = MultiMarkovModel::new();
-    /// let input_vec = vec![
-    ///     vec!['a','c','e'],
-    ///     vec!['f','o','o','b','a','r'],
-    ///     vec!['b','a','z'],
-    /// ];
-    /// model.add_sequences(input_vec.into_iter());
-    /// let bestmodel = model.best_model(&vec!['b','a']).unwrap();
-    /// assert!(bestmodel.contains_key(&'r')); // 'r' follows ['a'] as well as ['b','a']
-    /// assert!(!bestmodel.contains_key(&'c')); // 'c' follows ['a'], but doesn't follow ['b','a']
-    /// ```
-    pub fn best_model(&self, current_sequence: &Vec<T>) ->  Option<&HashMap<T,f64>> {
+    fn best_model(&self, current_sequence: &Vec<T>) ->  Option<&HashMap<T,f64>> {
         // If current_sequence.len() is at least self.order, count "i" down from self.order to 1,
         // taking sequence slices of length "i" and checking if we have a matching model:
         for i in (1..(min(self.order as usize, current_sequence.len())+1)).rev() {
             let subsequence = &current_sequence[(current_sequence.len()-i)..current_sequence.len()];
-            if self.frequencies.contains_key(subsequence) {
-                return self.frequencies.get(subsequence);
+            if self.markov_chain.contains_key(subsequence) {
+                return self.markov_chain.get(subsequence);
             }
         }
         None
@@ -223,3 +179,44 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkovModel<T> {
 
 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_model_builder_works() {
+        let input_vec = vec![
+            vec!['a'], // can't be used, but should be skipped over rather than causing error to propagate
+            vec!['a','c','e'],
+            vec!['f','o','o','b','a','r'],
+            vec!['b','a','z'],
+        ];
+        let markov = MultiMarkov::<char>::new()
+            .with_order(MultiMarkov::<char>::DEFAULT_ORDER)
+            .with_priors(MultiMarkov::<char>::DEFAULT_PRIOR)
+            .train(input_vec.into_iter());
+        assert!(markov.is_ok()); // building didn't fail
+        let mut markov = markov.unwrap();
+        assert!(markov.random_next(&vec!['a','b','c']).is_some()); // random draw didn't fail (because 'c' is in training data)
+        assert!(markov.random_next(&vec!['x','y','z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
+    }
+
+    #[test]
+    fn test_model_weights_and_priors_are_correct() {
+        let input_vec = vec![
+            vec!['a','b'],
+            vec!['a','b','c'],
+        ];
+        let markov = MultiMarkov::<char>::new()
+            .with_priors(0.001)
+            .train(input_vec.into_iter())
+            .unwrap();
+        let chain = &markov.markov_chain;
+        assert_eq!(*chain.get(&*vec!['a']).unwrap().get(&'b').unwrap(),2.0); // seen twice in training data
+        assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'c').unwrap(),1.0); // seen once in training data
+        assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.001); // not observed in training data; assigned a 'prior' probability
+    }
+
+}
+
