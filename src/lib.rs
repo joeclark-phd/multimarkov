@@ -45,7 +45,7 @@ use std::hash::Hash;
 /// let markov = MultiMarkov::<char>::new()
 ///     .with_order(2) // omit to use default of 3
 ///     .with_priors(0.01) // omit to use default of 0.005
-///     .train(input_vec.into_iter()) // you can chain this method to train on more than one iterator
+///     .train(input_vec.into_iter())
 ///     .expect("something went wrong training the model!");
 /// ```
 ///
@@ -87,8 +87,9 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
     }
 
     /// Ingest an iterator of sequences, adding the observed state transitions to the internal
-    /// statistical model.  Data is added, not replaced, so this method can be called repeatedly
-    /// (or chained) to use multiple data sets in building the model.
+    /// statistical model.  This method adds priors (unless `without_priors()` was called) after
+    /// training the model, so calling it more than once is not recommended.  If you want to
+    /// combine multiple datasets, merge them into one iterator before calling `train()`.
     pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<Self, &'static str> {
         self.add_sequences(sequences)?;
         self.add_priors(self.prior);
