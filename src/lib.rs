@@ -31,7 +31,7 @@ use std::hash::Hash;
 /// of a training dataset and enable the generation of sequences not observed in training.
 ///
 /// This implementation is inspired by the algorithm
-/// [described by JLund3 at RogueBasin](http://roguebasin.roguelikedevelopment.org/index.php?title=Names_from_a_high_order_Markov_Process_and_a_simplified_Katz_back-off_scheme).
+/// [described by JLund3 at RogueBasin](http://www.roguebasin.com/index.php/Names_from_a_high_order_Markov_Process_and_a_simplified_Katz_back-off_scheme).
 ///
 /// Instantiate it with the builder pattern:
 ///
