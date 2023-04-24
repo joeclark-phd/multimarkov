@@ -148,7 +148,7 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
 
     /// Using the random-number generator and the "weights" of the various state transitions from
     /// the trained model, draw a new state to follow the given sequence.
-    pub fn random_next(&mut self, current_sequence: &Vec<T>) -> Option<T> {
+    pub fn random_next(&self, current_sequence: &Vec<T>) -> Option<T> {
         let bestmodel = self.best_model(current_sequence)?;
         let sum_of_weights: f64 = bestmodel.values().sum();
         // TODO: use an RNG or RNG seed stored in the struct, so the user can specify it if desired

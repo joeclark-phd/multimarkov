@@ -8,7 +8,7 @@ fn main() {
     let reader = BufReader::new(file);
     let lines = reader.lines().map(|l| l.unwrap().to_lowercase() ).map(|l| l.chars().collect::<Vec<_>>()).map(|mut v| { v.insert(0, '#'); v.push('#'); v });
 
-    let mut model = MultiMarkov::<char>::new()
+    let model = MultiMarkov::<char>::new()
         .with_order(3)
         .with_priors(0.01)
         .train(lines)
