@@ -11,7 +11,8 @@ fn main() {
     let mut model = MultiMarkov::<char>::new()
         .with_order(3)
         .with_priors(0.01)
-        .train(lines).expect("something went wrong training the model!");
+        .train(lines)
+        .build();
 
     for _i in 0..10 {
         // generate a roman-sounding name

@@ -46,7 +46,7 @@ use std::hash::Hash;
 ///     .with_order(2) // omit to use default of 3
 ///     .with_priors(0.01) // omit to use default of 0.005
 ///     .train(input_vec.into_iter())
-///     .expect("something went wrong training the model!");
+///     .build();
 /// ```
 ///
 /// Use method `random_next` (see below) to use it to generate new sequences.
@@ -87,27 +87,26 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
     }
 
     /// Ingest an iterator of sequences, adding the observed state transitions to the internal
-    /// statistical model.  This method adds priors (unless `without_priors()` was called) after
-    /// training the model, so calling it more than once is not recommended.  If you want to
-    /// combine multiple datasets, merge them into one iterator before calling `train()`.
-    pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<Self, &'static str> {
-        self.add_sequences(sequences)?;
-        self.add_priors(self.prior);
-        Ok(self)
+    /// statistical model.
+    pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Self {
+        self.add_sequences(sequences);
+        self
     }
 
     /// Takes in a vector of sequences, and calls the `add_sequence` method on
     /// each one in turn, training the model.
     fn add_sequences(&mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<(), &'static str> {
         //if sequences.len() < 1 { return Err("no sequences in input"); }
+        let mut sequence_count: usize = 0;
         for sequence in sequences {
             match self.add_sequence(&sequence) {
-                Ok(()) => (),
+                Ok(()) => sequence_count+=1,
                 Err(e) => {
                     println!("error ignored: {}",e);
                 }
             };
         }
+        println!("{} sequences added",sequence_count);
         return Ok(());
     }
 
@@ -129,6 +128,12 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
         }
         self.known_states.insert(sequence[0]); // previous loop stops before index 0
         Ok(())
+    }
+
+    /// As the final step, we add priors (or "prior probabilities").  The model is now fully built.
+    pub fn build(mut self) -> Self {
+        self.add_priors(self.prior);
+        self
     }
 
     /// Fills in missing state transitions with a given value so that any observed state (except
@@ -193,12 +198,11 @@ mod tests {
             vec!['f','o','o','b','a','r'],
             vec!['b','a','z'],
         ];
-        let markov = MultiMarkov::<char>::new()
+        let mut markov = MultiMarkov::<char>::new()
             .with_order(MultiMarkov::<char>::DEFAULT_ORDER)
             .with_priors(MultiMarkov::<char>::DEFAULT_PRIOR)
-            .train(input_vec.into_iter());
-        assert!(markov.is_ok()); // building didn't fail
-        let mut markov = markov.unwrap();
+            .train(input_vec.into_iter())
+            .build();
         assert!(markov.random_next(&vec!['a','b','c']).is_some()); // random draw didn't fail (because 'c' is in training data)
         assert!(markov.random_next(&vec!['x','y','z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
     }
@@ -212,7 +216,7 @@ mod tests {
         let markov = MultiMarkov::<char>::new()
             .with_priors(0.001)
             .train(input_vec.into_iter())
-            .unwrap();
+            .build();
         let chain = &markov.markov_chain;
         assert_eq!(*chain.get(&*vec!['a']).unwrap().get(&'b').unwrap(),2.0); // seen twice in training data
         assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'c').unwrap(),1.0); // seen once in training data
