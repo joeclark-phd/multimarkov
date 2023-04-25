@@ -1,7 +1,10 @@
+mod builder;
+
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
-use std::cmp::{max,min};
-use rand::Rng;
 use std::hash::Hash;
+use rand::Rng;
+use crate::multimarkov::builder::MultiMarkovBuilder;
 
 /// Multi-order Markov chain models with a Katz back-off, for procedural generation applications.
 ///
@@ -36,114 +39,36 @@ use std::hash::Hash;
 /// Instantiate it with the builder pattern:
 ///
 /// ```
-/// use multimarkov::MultiMarkov;
 /// let input_vec = vec![
 ///     vec!['a','c','e'],
 ///     vec!['f','o','o','b','a','r'],
 ///     vec!['b','a','z'],
 /// ];
-/// let markov = MultiMarkov::<char>::new()
+/// let mm = MultiMarkov::<char>::builder()
 ///     .with_order(2) // omit to use default of 3
-///     .with_priors(0.01) // omit to use default of 0.005
+///     .with_prior(0.01) // omit to use default of 0.005, or call .without_prior() to disable priors
 ///     .train(input_vec.into_iter())
 ///     .build();
 /// ```
 ///
 /// Use method `random_next` (see below) to use it to generate new sequences.
-pub struct MultiMarkov<T: Eq + Hash + Clone + Copy> {
+pub struct MultiMarkov<T>
+    where T: Eq + Hash + Clone
+{
     pub markov_chain: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
     order: i32,
-    prior: f64,
-    // TODO: add a random number generator (or seed?) that the user can specify, or go with a default
 }
-impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
 
+impl<T> MultiMarkov<T>
+    where T: Eq + Hash + Clone
+{
     pub const DEFAULT_ORDER: i32 = 3;
     pub const DEFAULT_PRIOR: f64 = 0.005;
 
-    pub fn new() -> MultiMarkov<T> {
-        MultiMarkov {
-            markov_chain: HashMap::new(),
-            known_states: HashSet::new(),
-            order: MultiMarkov::<T>::DEFAULT_ORDER,
-            prior: MultiMarkov::<T>::DEFAULT_PRIOR,
-        }
-    }
-
-    pub fn with_order(mut self, order: i32) -> Self {
-        self.order = order;
-        self
-    }
-
-    pub fn with_priors(mut self, prior: f64) -> Self {
-        self.prior = prior;
-        self
-    }
-
-    pub fn without_priors(mut self) -> Self {
-        self.prior = 0.0;
-        self
-    }
-
-    /// Ingest an iterator of sequences, adding the observed state transitions to the internal
-    /// statistical model.
-    pub fn train(mut self, sequences: impl Iterator<Item = Vec<T>>) -> Self {
-        self.add_sequences(sequences);
-        self
-    }
-
-    /// Takes in a vector of sequences, and calls the `add_sequence` method on
-    /// each one in turn, training the model.
-    fn add_sequences(&mut self, sequences: impl Iterator<Item = Vec<T>>) -> Result<(), &'static str> {
-        //if sequences.len() < 1 { return Err("no sequences in input"); }
-        let mut sequence_count: usize = 0;
-        for sequence in sequences {
-            match self.add_sequence(&sequence) {
-                Ok(()) => sequence_count+=1,
-                Err(e) => {
-                    println!("error ignored: {}",e);
-                }
-            };
-        }
-        println!("{} sequences added",sequence_count);
-        return Ok(());
-    }
-
-    /// Adds to the model all the observed state transitions found in one sequence of training data.
-    /// This training is additive; it doesn't empty or overwrite the model, so you can call this
-    /// method on many such training sequences in order to fully train the model.
-    fn add_sequence(&mut self, sequence: &Vec<T>) -> Result<(), &'static str> {
-        if sequence.len() < 2 { return Err("sequence was too short, must contain at least two states"); }
-
-        // loop backwards through the characters in the sequence
-        for i in (1..sequence.len()).rev() {
-            // Build a running set of all known characters while we're at it
-            self.known_states.insert(sequence[i]);
-            // For the sequences preceding character (i), record that character (i) was observed following them.
-            // IE if the char_vec is ['R','U','S','T'] and this is a 3rd-order model, then for the three models ['S'], ['U','S'], and ['R','U','S'] we record that ['T'] is a known follower.
-            for j in (max(0,i as i32 - self.order) as usize)..i {
-                *self.markov_chain.entry(Vec::from(&sequence[j..i])).or_insert(HashMap::new()).entry(sequence[i]).or_insert(0.0) += 1.0;
-            }
-        }
-        self.known_states.insert(sequence[0]); // previous loop stops before index 0
-        Ok(())
-    }
-
-    /// As the final step, we add priors (or "prior probabilities").  The model is now fully built.
-    pub fn build(mut self) -> Self {
-        self.add_priors(self.prior);
-        self
-    }
-
-    /// Fills in missing state transitions with a given value so that any observed state (except
-    /// those only seen at the end of sequences) can transition to any other state.
-    fn add_priors(&mut self, prior: f64) {
-        for v in self.markov_chain.values_mut() {
-            for &a in self.known_states.iter() {
-                v.entry(a).or_insert(prior);
-            }
-        }
+    /// Create a builder to set up and train a MultiMarkov instance.
+    pub fn builder() -> MultiMarkovBuilder<T> {
+        MultiMarkovBuilder::<T>::new()
     }
 
     /// Using the random-number generator and the "weights" of the various state transitions from
@@ -183,45 +108,45 @@ impl<T: Eq + Hash + Clone + Copy> MultiMarkov<T> {
         None
     }
 
-
 }
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_model_builder_works() {
-        let input_vec = vec![
+    fn char_data() -> Vec<Vec<char>> {
+        vec![
             vec!['a'], // can't be used, but should be skipped over rather than causing error to propagate
             vec!['a','c','e'],
             vec!['f','o','o','b','a','r'],
             vec!['b','a','z'],
-        ];
-        let mut markov = MultiMarkov::<char>::new()
-            .with_order(MultiMarkov::<char>::DEFAULT_ORDER)
-            .with_priors(MultiMarkov::<char>::DEFAULT_PRIOR)
-            .train(input_vec.into_iter())
+        ]
+    }
+
+    #[test]
+    fn test_model_builder_works() {
+        let mm = MultiMarkov::<char>::builder()
+            .with_order(2)
+            .with_prior(0.015)
+            .train(char_data().into_iter())
             .build();
-        assert!(markov.random_next(&vec!['a','b','c']).is_some()); // random draw didn't fail (because 'c' is in training data)
-        assert!(markov.random_next(&vec!['x','y','z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
+        assert!(mm.random_next(&vec!['a','b','c']).is_some()); // random draw didn't fail (because 'c' is in training data)
+        assert!(mm.random_next(&vec!['x','y','z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
     }
 
     #[test]
     fn test_model_weights_and_priors_are_correct() {
-        let input_vec = vec![
-            vec!['a','b'],
-            vec!['a','b','c'],
-        ];
-        let markov = MultiMarkov::<char>::new()
-            .with_priors(0.001)
-            .train(input_vec.into_iter())
+        let mm = MultiMarkov::<char>::builder()
+            .with_order(2)
+            .with_prior(0.001)
+            .train(char_data().into_iter())
             .build();
-        let chain = &markov.markov_chain;
-        assert_eq!(*chain.get(&*vec!['a']).unwrap().get(&'b').unwrap(),2.0); // seen twice in training data
-        assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'c').unwrap(),1.0); // seen once in training data
-        assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'a').unwrap(),0.001); // not observed in training data; assigned a 'prior' probability
+        let chain = &mm.markov_chain;
+        assert_eq!(*chain.get(&*vec!['b']).unwrap().get(&'a').unwrap(),2.0); // seen twice in training data
+        assert_eq!(*chain.get(&*vec!['a']).unwrap().get(&'c').unwrap(),1.0); // seen once in training data
+        assert_eq!(*chain.get(&*vec!['a']).unwrap().get(&'e').unwrap(),0.001); // not observed in training data; assigned a 'prior' probability
     }
 
 }
-
