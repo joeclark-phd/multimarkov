@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::cmp::{max};
-use crate::multimarkov::MultiMarkov;
+use crate::MultiMarkov;
 
 pub struct MultiMarkovBuilder<T>
     where T: Eq + Hash + Clone

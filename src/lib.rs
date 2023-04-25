@@ -4,7 +4,7 @@ use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use rand::Rng;
-use crate::multimarkov::builder::MultiMarkovBuilder;
+use crate::builder::MultiMarkovBuilder;
 
 /// Multi-order Markov chain models with a Katz back-off, for procedural generation applications.
 ///
@@ -39,6 +39,7 @@ use crate::multimarkov::builder::MultiMarkovBuilder;
 /// Instantiate it with the builder pattern:
 ///
 /// ```
+/// use multimarkov::MultiMarkov;
 /// let input_vec = vec![
 ///     vec!['a','c','e'],
 ///     vec!['f','o','o','b','a','r'],
@@ -57,7 +58,7 @@ pub struct MultiMarkov<T>
 {
     pub markov_chain: HashMap<Vec<T>,HashMap<T,f64>>,
     pub known_states: HashSet<T>,
-    order: i32,
+    pub order: i32,
 }
 
 impl<T> MultiMarkov<T>

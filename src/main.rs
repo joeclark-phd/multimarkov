@@ -1,8 +1,8 @@
-mod multimarkov;
+mod builder;
 
 use std::fs::File;
-use std::io::{BufReader, BufRead};
-use crate::multimarkov::MultiMarkov;
+use std::io::{BufRead, BufReader};
+use multimarkov::MultiMarkov;
 
 fn main() {
 
