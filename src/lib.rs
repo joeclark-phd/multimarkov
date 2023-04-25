@@ -1,4 +1,4 @@
-mod builder;
+pub mod builder;
 
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
