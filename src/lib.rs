@@ -15,7 +15,7 @@ use std::hash::Hash;
 /// if `order > 1`, multiple models of varying fittedness may specify possible following states
 /// for a given sequence.  For example, if `order == 3` (the default) and you have a sequence
 /// `['R','U','S','T']`, for which you'd like to randomly draw future states, your instance of
-/// MultiMarkovModel may have a model for states that follow `['U','S','T']`, another for states
+/// MultiMarkov may have a model for states that follow `['U','S','T']`, another for states
 /// that follow `['S','T']`, and a third for states that follow `['T']`.  These models are built up
 /// by ingesting vectors of training data (for example, text from a file).  The "Katz back-off"
 /// means that in drawing random future states we try to use the probability distribution in the
