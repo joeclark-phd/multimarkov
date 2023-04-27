@@ -30,7 +30,7 @@ impl<T> MultiMarkovBuilder<T>
     /// generated data more similar to the training data, less random, and will make the process
     /// slower and require more memory.
     ///
-    /// The default is MultiMarkov::DEFAULT_ORDER
+    /// The default is `MultiMarkov::DEFAULT_ORDER`
     pub fn with_order(mut self, order: i32) -> Self {
         assert!(order>0,"Order must be an integer greater than zero.");
         self.order = order;
@@ -41,7 +41,7 @@ impl<T> MultiMarkovBuilder<T>
     /// if that transition was not observed in the training data.  Small fractions are recommended,
     /// so that this "true randomness" will be less common than transitions based on the training data.
     ///
-    /// The default is MultiMarkov::DEFAULT_PRIOR
+    /// The default is `MultiMarkov::DEFAULT_PRIOR`
     pub fn with_prior(mut self, prior: f64) -> Self {
         if prior==0.0 {
             self.prior = None;
