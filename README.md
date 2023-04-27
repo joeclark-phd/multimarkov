@@ -6,7 +6,7 @@ It is a new implementation of [my markovmodels project (in Java)](https://github
 
 ## Markov chains
 
-A Markov chain maps current states to possible future states, usually defined with probabilities ([c.f. wikipedia](https://en.wikipedia.org/wiki/Markov_chain)).  This is useful in procedural generation, for example to model which letters in a language most frequently follow a given letter, or to model which weather conditions most likely follow a given weather condition.  For each known state, a MarkovChain knows or can calculate the possible following states, so a client should be able to traverse the "chain" as many iterations as he likes (e.g. for a simulation).  In most cases these transitions will be weighted by a probability distribution or observed frequencies, so not all transitions from any given state will be equally likely.
+A Markov chain maps current states to possible future states, usually defined with probabilities ([c.f. wikipedia](https://en.wikipedia.org/wiki/Markov_chain)).  This is useful in procedural generation, for example to model which letters in a language most frequently follow a given letter, or to model which weather conditions most likely follow a given weather condition.  For each known state, a Markov chain knows the set of possible following states, so a client should be able to traverse the "chain" as many iterations as he likes (e.g. for a simulation).  In most cases these transitions will be weighted by a probability distribution or observed frequencies, so not all transitions from any given state will be equally likely.
 
 ## `MultiMarkov<T>`
 
