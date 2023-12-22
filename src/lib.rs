@@ -118,7 +118,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{rngs::ThreadRng, thread_rng};
 
     fn char_data() -> Vec<Vec<char>> {
         vec![
@@ -142,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_model_weights_and_priors_are_correct() {
-        let mut mm = MultiMarkov::<char>::builder()
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .with_prior(0.001)
             .train(char_data().into_iter())

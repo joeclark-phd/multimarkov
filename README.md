@@ -24,7 +24,7 @@ Add `multimarkov` to your `Cargo.toml`.
 
 ### Building and training
 
-To build a `MultiMarkov` instance, use the builder pattern.  `T` can be any type that implements `Eq + Hash + Clone`.  Here we are using `char`:
+To build a `MultiMarkov` instance, use the builder pattern.  `T` can be any type that implements `Eq + Hash + Clone + std::cmp::Ord`.  Here we are using `char`:
 
     let training_data = vec![
         vec!['f','o','o','b','a','r'],
@@ -34,6 +34,7 @@ To build a `MultiMarkov` instance, use the builder pattern.  `T` can be any type
     let mm = MultiMarkov::<char>::builder()
         .with_order(2) // omit to use default of 3
         .with_prior(0.01) // omit to use default of 0.005, or call .without_prior() to disable priors
+        .with_rng(Box::new(SmallRng::seed_from_u64(1234))) // omit to use a default, non-seeded RNG
         .train(input_vec.into_iter())
         .build();
 
@@ -54,6 +55,8 @@ is much more likely to draw `'f'` because it has trained a model for what comes 
 
 
 ## Release notes:
+
+0.4.0: The addition of a method `with_rng()` on the builder allows you to add a custom RNG, for example, if you want to use a random number seed.  Thanks RicardRC.
 
 0.3.0: Mostly rewritten; now `T` can be any `Eq + Hash + Clone`, and doesn't need `Copy`, which means we can use sequences of strings.  I also introduced a real "builder" struct, MultiMarkovBuilder.
 
