@@ -39,13 +39,15 @@ use std::hash::Hash;
 /// Instantiate it with the builder pattern:
 ///
 /// ```
+/// 
 /// use multimarkov::MultiMarkov;
+/// use rand::{rngs::ThreadRng, thread_rng};
 /// let input_vec = vec![
 ///     vec!['a','c','e'],
 ///     vec!['f','o','o','b','a','r'],
 ///     vec!['b','a','z'],
 /// ];
-/// let mm = MultiMarkov::<char>::builder()
+/// let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
 ///     .with_order(2) // omit to use default of 3
 ///     .with_prior(0.01) // omit to use default of 0.005, or call .without_prior() to disable priors
 ///     .train(input_vec.into_iter())
