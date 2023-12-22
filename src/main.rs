@@ -1,7 +1,7 @@
 mod builder;
 
 use multimarkov::MultiMarkov;
-use rand::{rngs::ThreadRng, thread_rng};
+use rand::{rngs::SmallRng, SeedableRng};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -18,9 +18,10 @@ fn main() {
             v
         });
 
-    let mut mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+    let mut mm = MultiMarkov::<char>::builder()
         .with_order(3)
         .with_prior(0.02)
+        .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
         .train(lines)
         .build();
 

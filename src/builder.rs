@@ -1,34 +1,32 @@
 use crate::MultiMarkov;
-use rand::RngCore;
+use rand::{RngCore, thread_rng};
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 
-pub struct MultiMarkovBuilder<T, R>
+pub struct MultiMarkovBuilder<T>
 where
     T: Eq + Hash + Clone + std::cmp::Ord,
-    R: RngCore,
 {
     pub markov_chain: HashMap<Vec<T>, BTreeMap<T, f64>>,
     pub known_states: HashSet<T>,
     order: i32,
     prior: Option<f64>,
-    rng: R,
+    rng: Box<dyn RngCore>,
 }
 
-impl<T, R> MultiMarkovBuilder<T, R>
+impl<T> MultiMarkovBuilder<T>
 where
     T: Eq + Hash + Clone + std::cmp::Ord,
-    R: RngCore,
 {
     /// Instantiate a new builder.
-    pub fn new(rng: R) -> Self {
+    pub fn new() -> Self {
         Self {
             markov_chain: HashMap::new(),
             known_states: HashSet::new(),
-            order: MultiMarkov::<T, R>::DEFAULT_ORDER,
-            prior: Some(MultiMarkov::<T, R>::DEFAULT_PRIOR),
-            rng,
+            order: MultiMarkov::<T>::DEFAULT_ORDER,
+            prior: Some(MultiMarkov::<T>::DEFAULT_PRIOR),
+            rng: Box::new(thread_rng()),
         }
     }
 
@@ -64,6 +62,12 @@ where
         self.prior = None;
         self
     }
+
+    /// Sets a custom Random Number Generator (RNG) for the model.
+    pub fn with_rng(mut self, rng: Box<dyn RngCore>) -> Self {
+        self.rng = rng;
+        self
+    } 
 
     /// Ingest an iterator of sequences, adding the observed state transitions to the internal
     /// statistical model.
@@ -122,7 +126,7 @@ where
     }
 
     /// Adds prior probabilities (if any) and builds the MultiMarkov object.
-    pub fn build(mut self) -> MultiMarkov<T, R> {
+    pub fn build(mut self) -> MultiMarkov<T> {
         self.add_priors();
         MultiMarkov {
             markov_chain: self.markov_chain,
@@ -183,21 +187,21 @@ mod tests {
 
     #[test]
     fn test_can_train_char_sequences() {
-        let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .train(char_data().into_iter());
     }
 
     #[test]
     fn test_can_train_string_sequences() {
-        let mm = MultiMarkov::<String, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<String>::builder()
             .with_order(2)
             .train(string_data().into_iter());
     }
 
     #[test]
     fn sequences_in_training_show_up_in_model() {
-        let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .train(char_data().into_iter());
         // 'e' comes after 'c' (end of 2nd sequence trained properly)
@@ -224,7 +228,7 @@ mod tests {
 
     #[test]
     fn can_set_priors_and_they_work() {
-        let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .train(char_data().into_iter())
             .with_prior(0.015)
@@ -239,7 +243,7 @@ mod tests {
 
     #[test]
     fn make_sure_it_works_with_strings_too() {
-        let mm = MultiMarkov::<String, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<String>::builder()
             .with_order(2)
             .train(string_data().into_iter())
             .with_prior(0.011)
@@ -262,7 +266,7 @@ mod tests {
 
     #[test]
     fn can_specify_no_priors_and_build() {
-        let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .train(char_data().into_iter())
             .without_prior()
@@ -274,19 +278,21 @@ mod tests {
     #[test]
     #[should_panic(expected = "Order must be an integer greater than zero.")]
     fn order_cannot_be_zero_or_negative() {
-        let mm = MultiMarkov::<char, ThreadRng>::builder(thread_rng())
+        let mm = MultiMarkov::<char>::builder()
             .with_order(0)
             .train(char_data().into_iter());
     }
 
     #[test]
     fn test_rng_clone() {
-        use rand::{rngs::SmallRng, Rng, SeedableRng};
-        let mut mm1 = MultiMarkov::<char, SmallRng>::builder(SmallRng::seed_from_u64(1234))
+        use rand::{rngs::SmallRng, SeedableRng};
+        let mut mm1 = MultiMarkov::<char>::builder()
+            .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
             .train(char_data().into_iter())
             .without_prior()
             .build();
-        let mut mm2 = MultiMarkov::<char, SmallRng>::builder(SmallRng::seed_from_u64(1234))
+        let mut mm2 = MultiMarkov::<char>::builder()
+            .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
             .train(char_data().into_iter())
             .without_prior()
             .build();
