@@ -1,5 +1,5 @@
 use crate::MultiMarkov;
-use rand::{RngCore, thread_rng};
+use rand::{thread_rng, RngCore};
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
@@ -157,8 +157,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::thread_rng;
 
     fn char_data() -> Vec<Vec<char>> {
         vec![
@@ -187,14 +185,14 @@ mod tests {
 
     #[test]
     fn test_can_train_char_sequences() {
-        let mm = MultiMarkov::<char>::builder()
+        let _mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .train(char_data().into_iter());
     }
 
     #[test]
     fn test_can_train_string_sequences() {
-        let mm = MultiMarkov::<String>::builder()
+        let _mm = MultiMarkov::<String>::builder()
             .with_order(2)
             .train(string_data().into_iter());
     }
@@ -278,13 +276,13 @@ mod tests {
     #[test]
     #[should_panic(expected = "Order must be an integer greater than zero.")]
     fn order_cannot_be_zero_or_negative() {
-        let mm = MultiMarkov::<char>::builder()
+        let _mm = MultiMarkov::<char>::builder()
             .with_order(0)
             .train(char_data().into_iter());
     }
 
     #[test]
-    fn test_rng_clone() {
+    fn test_that_seeded_rngs_give_the_same_output_every_time() {
         use rand::{rngs::SmallRng, SeedableRng};
         let mut mm1 = MultiMarkov::<char>::builder()
             .with_rng(Box::new(SmallRng::seed_from_u64(1234)))

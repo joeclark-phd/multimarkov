@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "multimarkov"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["joeclark-phd <joe@joeclark.net>"]
 description = """
 This is a generic tool for training and using multi-order Markov chains for procedural generation applications

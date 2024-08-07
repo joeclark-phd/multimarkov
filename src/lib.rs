@@ -5,6 +5,7 @@ use rand::{Rng, RngCore};
 use std::cmp::min;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
+use std::fmt;
 
 /// Multi-order Markov chain models with a Katz back-off, for procedural generation applications.
 ///
@@ -68,7 +69,7 @@ where
 
 impl<T> MultiMarkov<T>
 where
-    T: Eq + Hash + Clone + std::cmp::Ord,
+    T: Eq + Hash + Clone + std::cmp::Ord
 {
     pub const DEFAULT_ORDER: i32 = 3;
     pub const DEFAULT_PRIOR: f64 = 0.005;
@@ -115,6 +116,17 @@ where
     }
 }
 
+
+impl<T> fmt::Debug for MultiMarkov<T>
+where
+T: Eq + Hash + Clone + std::cmp::Ord
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(&format!("MultiMarkov<{}>(trained)", std::any::type_name::<T>()))
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,6 +149,16 @@ mod tests {
             .build();
         assert!(mm.random_next(&vec!['a', 'b', 'c']).is_some()); // random draw didn't fail (because 'c' is in training data)
         assert!(mm.random_next(&vec!['x', 'y', 'z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
+    }
+
+    #[test]
+    fn test_debug_implementation() {
+        let mm = MultiMarkov::<char>::builder()
+        .with_order(2)
+        .with_prior(0.015)
+        .train(char_data().into_iter())
+        .build();
+        assert_eq!(format!("{:?}",mm), "MultiMarkov<char>(trained)");
     }
 
     #[test]

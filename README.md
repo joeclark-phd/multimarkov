@@ -56,6 +56,8 @@ is much more likely to draw `'f'` because it has trained a model for what comes 
 
 ## Release notes:
 
+0.5.0: MultiMarkov now implements `Debug`
+
 0.4.0: The addition of a method `with_rng()` on the builder allows you to add a custom RNG, for example, if you want to use a random number seed.  Thanks RicardRC.
 
 0.3.0: Mostly rewritten; now `T` can be any `Eq + Hash + Clone`, and doesn't need `Copy`, which means we can use sequences of strings.  I also introduced a real "builder" struct, MultiMarkovBuilder.
