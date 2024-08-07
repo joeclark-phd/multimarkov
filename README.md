@@ -56,6 +56,8 @@ is much more likely to draw `'f'` because it has trained a model for what comes 
 
 ## Release notes:
 
+**1.0.0**: Replaced `println`s with logging using the `log` crate.  Added logging of the number of known states and trained sequences within the `add_priors` function on `MultiMarkovBuilder`.  It turns out that that step can really explode if you have a large dataset, so this logging may be helpful downstream.  Also: moved the binary target (`main.rs`) into the "examples" directory.  Run it with `cargo run --example main`.
+
 0.5.0: MultiMarkov now implements `Debug`
 
 0.4.0: The addition of a method `with_rng()` on the builder allows you to add a custom RNG, for example, if you want to use a random number seed.  Thanks RicardRC.

@@ -1,4 +1,5 @@
 use crate::MultiMarkov;
+use log::{debug, info};
 use rand::{thread_rng, RngCore};
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -80,8 +81,8 @@ where
                 Err(_) => error_count += 1,
             };
         }
-        println!(
-            "{} sequences successfully trained; {} errors",
+        debug!(
+            "{} sequences successfully trained; {} errors.",
             success_count, error_count
         );
         self
@@ -90,7 +91,7 @@ where
     /// Learn all the transitions possible from one training sequence, adding observations to the Markov model.
     fn train_sequence(&mut self, sequence: Vec<T>) -> Result<(), &str> {
         if sequence.len() < 2 {
-            return Err("sequence was too short, must contain at least two states");
+            return Err("Sequence was too short, must contain at least two states.");
         }
 
         // loop backwards through the characters in the sequence
@@ -141,13 +142,15 @@ where
     /// Should be called after training is complete, because only then do we know the full set of
     /// known states, and which transitions are unobserved.
     fn add_priors(&mut self) {
+        let mut num_priors_added: usize = 0;
         match self.prior {
             Some(p) => {
                 for v in self.markov_chain.values_mut() {
                     for a in self.known_states.iter() {
-                        v.entry(a.clone()).or_insert(p);
+                        v.entry(a.clone()).or_insert_with(|| {num_priors_added+=1; p});
                     }
                 }
+                info!("Model has {} known states and {} trained sequences. {} priors added.",self.markov_chain.len(),self.known_states.len(),num_priors_added);
             }
             None => (),
         }

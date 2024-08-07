@@ -1,11 +1,14 @@
-mod builder;
-
 use multimarkov::MultiMarkov;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() {
+
+    // initialize logging
+    env_logger::builder().filter_level(log::LevelFilter::Debug).init();
+
+
     let file = File::open("resources/romans.txt").unwrap();
     let reader = BufReader::new(file);
     let lines = reader
