@@ -1,6 +1,7 @@
 use crate::MultiMarkov;
 use log::{debug, info};
-use rand::{thread_rng, RngCore};
+use rand::rngs::SmallRng;
+use rand::{thread_rng, Rng, RngCore, SeedableRng};
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
@@ -13,7 +14,7 @@ where
     pub known_states: HashSet<T>,
     order: i32,
     prior: Option<f64>,
-    rng: Box<dyn RngCore>,
+    rng: Box<dyn RngCore + Send + Sync>,
 }
 
 impl<T> MultiMarkovBuilder<T>
@@ -27,7 +28,7 @@ where
             known_states: HashSet::new(),
             order: MultiMarkov::<T>::DEFAULT_ORDER,
             prior: Some(MultiMarkov::<T>::DEFAULT_PRIOR),
-            rng: Box::new(thread_rng()),
+            rng: Box::new(Box::new(SmallRng::seed_from_u64(thread_rng().gen()))),
         }
     }
 
@@ -65,10 +66,10 @@ where
     }
 
     /// Sets a custom Random Number Generator (RNG) for the model.
-    pub fn with_rng(mut self, rng: Box<dyn RngCore>) -> Self {
+    pub fn with_rng(mut self, rng: Box<dyn RngCore + Send + Sync>) -> Self {
         self.rng = rng;
         self
-    } 
+    }
 
     /// Ingest an iterator of sequences, adding the observed state transitions to the internal
     /// statistical model.
@@ -147,10 +148,18 @@ where
             Some(p) => {
                 for v in self.markov_chain.values_mut() {
                     for a in self.known_states.iter() {
-                        v.entry(a.clone()).or_insert_with(|| {num_priors_added+=1; p});
+                        v.entry(a.clone()).or_insert_with(|| {
+                            num_priors_added += 1;
+                            p
+                        });
                     }
                 }
-                info!("Model has {} known states and {} trained sequences. {} priors added.",self.markov_chain.len(),self.known_states.len(),num_priors_added);
+                info!(
+                    "Model has {} known states and {} trained sequences. {} priors added.",
+                    self.markov_chain.len(),
+                    self.known_states.len(),
+                    num_priors_added
+                );
             }
             None => (),
         }
