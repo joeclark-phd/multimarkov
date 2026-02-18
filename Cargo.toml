@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "multimarkov"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["joeclark-phd <joe@joeclark.net>"]
 description = """
 This is a generic tool for training and using multi-order Markov chains for procedural generation applications
@@ -23,11 +23,11 @@ license = "MIT"
 repository = "https://github.com/joeclark-phd/multimarkov"
 
 [dependencies]
-log = "0.4.22"
+log = "0.4.29"
 
 [dependencies.rand]
-version = "0.8.5"
-features = [ "small_rng" ]
+version = "0.9.2"
+features = ["small_rng"]
 
 [dev-dependencies]
-env_logger = "0.11.5"
+env_logger = "0.11.8"
