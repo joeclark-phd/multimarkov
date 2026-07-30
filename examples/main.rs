@@ -21,19 +21,19 @@ fn main() {
             v
         });
 
-    let mut mm = MultiMarkov::<char>::builder()
+    let mm = MultiMarkov::<char>::builder()
         .with_order(3)
         .with_prior(0.02)
-        .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
         .train(lines)
         .build();
+    let mut rng = SmallRng::seed_from_u64(1234);
 
     for _i in 0..10 {
         // generate a roman-sounding name
         let mut name = vec!['#']; // the beginning-of-word and end-of-word character
-        name.push(mm.random_next(&name).unwrap());
+        name.push(mm.random_next(&mut rng, &name).unwrap());
         while !name.ends_with(&*vec!['#']) {
-            name.push(mm.random_next(&name).unwrap());
+            name.push(mm.random_next(&mut rng, &name).unwrap());
         }
         name.pop();
         name.remove(0);

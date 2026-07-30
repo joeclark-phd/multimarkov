@@ -1,7 +1,5 @@
 use crate::MultiMarkov;
 use log::{debug, info};
-use rand::rngs::SmallRng;
-use rand::{thread_rng, Rng, RngCore, SeedableRng};
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
@@ -14,7 +12,6 @@ where
     pub known_states: HashSet<T>,
     order: i32,
     prior: Option<f64>,
-    rng: Box<dyn RngCore + Send + Sync>,
 }
 
 impl<T> MultiMarkovBuilder<T>
@@ -28,7 +25,6 @@ where
             known_states: HashSet::new(),
             order: MultiMarkov::<T>::DEFAULT_ORDER,
             prior: Some(MultiMarkov::<T>::DEFAULT_PRIOR),
-            rng: Box::new(Box::new(SmallRng::seed_from_u64(thread_rng().gen()))),
         }
     }
 
@@ -62,12 +58,6 @@ where
     /// transitions possible will be those seen in the training data.
     pub fn without_prior(mut self) -> Self {
         self.prior = None;
-        self
-    }
-
-    /// Sets a custom Random Number Generator (RNG) for the model.
-    pub fn with_rng(mut self, rng: Box<dyn RngCore + Send + Sync>) -> Self {
-        self.rng = rng;
         self
     }
 
@@ -134,7 +124,6 @@ where
             markov_chain: self.markov_chain,
             known_states: self.known_states,
             order: self.order,
-            rng: self.rng,
         }
     }
 
@@ -169,6 +158,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{rngs::SmallRng, SeedableRng};
 
     fn char_data() -> Vec<Vec<char>> {
         vec![
@@ -295,26 +285,55 @@ mod tests {
 
     #[test]
     fn test_that_seeded_rngs_give_the_same_output_every_time() {
-        use rand::{rngs::SmallRng, SeedableRng};
-        let mut mm1 = MultiMarkov::<char>::builder()
-            .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
+        let mm1 = MultiMarkov::<char>::builder()
             .train(char_data().into_iter())
             .without_prior()
             .build();
-        let mut mm2 = MultiMarkov::<char>::builder()
-            .with_rng(Box::new(SmallRng::seed_from_u64(1234)))
+        let mm2 = MultiMarkov::<char>::builder()
             .train(char_data().into_iter())
             .without_prior()
             .build();
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
-        assert_eq!(mm1.random_next(&vec!['a']), mm2.random_next(&vec!['a']));
+        let mut rng1 = SmallRng::seed_from_u64(1234);
+        let mut rng2 = SmallRng::seed_from_u64(1234);
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
+        assert_eq!(
+            mm1.random_next(&mut rng1, &vec!['a']),
+            mm2.random_next(&mut rng2, &vec!['a'])
+        );
     }
 }

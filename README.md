@@ -34,27 +34,34 @@ To build a `MultiMarkov` instance, use the builder pattern.  `T` can be any type
     let mm = MultiMarkov::<char>::builder()
         .with_order(2) // omit to use default of 3
         .with_prior(0.01) // omit to use default of 0.005, or call .without_prior() to disable priors
-        .with_rng(Box::new(SmallRng::seed_from_u64(1234))) // omit to use a default, non-seeded RNG
         .train(input_vec.into_iter())
         .build();
 
 ### Procedural generation
 
-To get a random draw, call `random_next()` with an `&Vec<T>` representing the current or previous state(s). For example:
+To get a random draw, call `random_next()` with a mutable RNG and an `&Vec<T>` representing the current or previous state(s). For example:
 
-    let next_letter = mm.random_next(&Vec['a']);
+    use rand::{rngs::SmallRng, SeedableRng};
+
+    let mut rng = SmallRng::seed_from_u64(1234);
+    let next_letter = mm.random_next(&mut rng, &vec!['a']);
 
 will randomly draw a letter to follow `'a'`.  Based on the training data, that will probably be `'r'` or `'f'`, but because of the "priors", any known state has a small chance of being drawn.
 
 The reason `random_next` requires a vector is that you may be using a multi-order model that needs to look back a few states in the sequence.  For example:
 
-    let next_letter = mm.random_next(&Vec['s','n','a']);
+    let next_letter = mm.random_next(&mut rng, &vec!['s','n','a']);
 
 is much more likely to draw `'f'` because it has trained a model for what comes after `'n','a'` which it prefers to use rather than its model of what comes after `'a'`.
 
 
 
 ## Release notes:
+
+**1.1.0**:
+* `MultiMarkov` is stateless (no longer stores an rng generator). Instead callers need to pass Rng generator.
+* Dependencies now use `default-features = false` for a smaller feature set.
+* Upgraded dependencies.
 
 **1.0.0**: Replaced `println`s with logging using the `log` crate.  Added logging of the number of known states and trained sequences within the `add_priors` function on `MultiMarkovBuilder`.  It turns out that that step can really explode if you have a large dataset, so this logging may be helpful downstream.  Also: moved the binary target (`main.rs`) into the "examples" directory.  Run it with `cargo run --example main`.
 

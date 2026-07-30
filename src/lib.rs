@@ -1,7 +1,7 @@
 pub mod builder;
 
 use crate::builder::MultiMarkovBuilder;
-use rand::{Rng, RngCore};
+use rand::{Rng, RngExt};
 use std::cmp::min;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
@@ -42,7 +42,7 @@ use std::hash::Hash;
 /// ```
 ///
 /// use multimarkov::MultiMarkov;
-/// use rand::{rngs::SmallRng, SeedableRng};
+/// use rand::{rngs::SmallRng, Rng, RngExt, SeedableRng};
 /// let input_vec = vec![
 ///     vec!['a','c','e'],
 ///     vec!['f','o','o','b','a','r'],
@@ -51,9 +51,10 @@ use std::hash::Hash;
 /// let mm = MultiMarkov::<char>::builder()
 ///     .with_order(2) // omit to use default of 3
 ///     .with_prior(0.01) // omit to use default of 0.005, or call .without_prior() to disable priors
-///     .with_rng(Box::new(SmallRng::seed_from_u64(1234))) // omit to use a default, non-seeded RNG
 ///     .train(input_vec.into_iter())
 ///     .build();
+/// let mut rng = SmallRng::seed_from_u64(1234);
+/// let _ = mm.random_next(&mut rng, &vec!['a']);
 /// ```
 ///
 /// Use method `random_next` (see below) to use it to generate new sequences.
@@ -64,7 +65,6 @@ where
     pub markov_chain: HashMap<Vec<T>, BTreeMap<T, f64>>,
     pub known_states: HashSet<T>,
     pub order: i32,
-    pub rng: Box<dyn RngCore + Send + Sync>,
 }
 
 impl<T> MultiMarkov<T>
@@ -81,8 +81,12 @@ where
 
     /// Using the random-number generator and the "weights" of the various state transitions from
     /// the trained model, draw a new state to follow the given sequence.
-    pub fn random_next(&mut self, current_sequence: &Vec<T>) -> Option<T> {
-        let r: f64 = self.rng.gen();
+    pub fn random_next<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        current_sequence: &Vec<T>,
+    ) -> Option<T> {
+        let r: f64 = rng.random();
         let bestmodel = self.best_model(current_sequence)?;
         let sum_of_weights: f64 = bestmodel.values().sum();
         let mut randomroll = r * sum_of_weights; // TODO: can this be accomplished in fewer lines?
@@ -132,6 +136,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{rngs::SmallRng, SeedableRng};
 
     fn char_data() -> Vec<Vec<char>> {
         vec![
@@ -144,13 +149,14 @@ mod tests {
 
     #[test]
     fn test_model_builder_works() {
-        let mut mm = MultiMarkov::<char>::builder()
+        let mm = MultiMarkov::<char>::builder()
             .with_order(2)
             .with_prior(0.015)
             .train(char_data().into_iter())
             .build();
-        assert!(mm.random_next(&vec!['a', 'b', 'c']).is_some()); // random draw didn't fail (because 'c' is in training data)
-        assert!(mm.random_next(&vec!['x', 'y', 'z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
+        let mut rng = SmallRng::seed_from_u64(42);
+        assert!(mm.random_next(&mut rng, &vec!['a', 'b', 'c']).is_some()); // random draw didn't fail (because 'c' is in training data)
+        assert!(mm.random_next(&mut rng, &vec!['x', 'y', 'z']).is_none()); // 'z' is in training data only at end of sequence; no following states were observed so there's no model
     }
 
     #[test]
